@@ -46,7 +46,7 @@ tree = app_commands.CommandTree(client)
 async def ticketing(interaction: discord.Interaction):
     embed = discord.Embed(title = "Текст, который будет показываться выше кнопки", color = discord.Colour.blue())
     await interaction.channel.send(embed = embed, view = ticket_launcher())
-    await interaction.response.send_message("Ticketing system launched!", ephemeral = True)
+    await interaction.response.send_message("Система запускается", ephemeral = True)
 
 
 client.run('токен')
