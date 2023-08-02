@@ -71,10 +71,9 @@ async def ticketing(interaction: discord.Interaction):
     await interaction.response.send_message("Система запускается", ephemeral = True)
 
 @tree.command(guild = discord.Object(id = server_id), name = 'close', description = 'Данная команда закрывает тикет')
-async def closee(interaction: discord.Interaction, role: discord.Role):
+async def closee(interaction: discord.Interaction):
 	if 'тикет-для-' in interaction.channel.name:
 		embed = discord.Embed(title = 'Вы уверены, что хотите закрыть этот тикет?', color = discord.Colour.blurple())
-		embed.set_footer(text = role.id)
 
 		await interaction.response.send_message(embed = embed, view = confirm(), ephemeral = True)
 	else:
