@@ -11,15 +11,22 @@ class ticket_launcher(discord.ui.View):
     async def ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
             ticket = utils.get(interaction.guild.text_channels, name = f"тикет-для-{interaction.user.name.lower().replace(' ', '-')}-{interaction.user.discriminator}")
             if ticket is not None: await interaction.response.send_message(f"тикет открыт {ticket.mention}!", ephemeral = True)
-            else:
-                overwrites = {
-                    interaction.guild.default_role: discord.PermissionOverwrite(view_channel = False),
-                    interaction.user: discord.PermissionOverwrite(view_channel = True, read_message_history = True, send_messages = True, attach_files = True, embed_links = True),
-                    interaction.guild.me: discord.PermissionOverwrite(view_channel = True, send_messages = True, read_message_history = True), 
-                }
-                channel = await interaction.guild.create_text_channel(name = f"тикет-для-{interaction.user.name}-{interaction.user.discriminator}", overwrites=overwrites, reason = f"Тикет для {interaction.user}")
-                await channel.send(f"{interaction.user.mention} Создан!")
-                await interaction.response.send_message(f"Я открыл для вас тикет {channel.mention}!", ephemeral = True)
+	    else:
+		if type(client.ticket_mod) is not discord.Role:
+			client.ticket_mod = interaction.guild.get_role(id модератора)
+		overwrites = {
+			interaction.guild.default_role: discord.PermissionOverwrite(view_channel = False),
+			interaction.user: discord.PermissionOverwrite(view_channel = True, read_message_history = True, send_messages = True, attach_files = True, embed_links = True),
+			interaction.guild.me: discord.PermissionOverwrite(view_channel = True, send_messages = True, read_message_history = True),
+			client.ticket_mod: discord.PermissionOverwrite(view_channel = True, read_message_history = True, send_messages = True, attach_files = True, embed_links = True),
+			}
+			try:
+				channel = await interaction.guild.create_text_channel(name = f'тикет-для-{interaction.user.name}-{interaction.user.discriminator}', overwrites = overwrites, reason = f'Тикет для {interaction.user}')
+			except:
+				return await interaction.response.send_message('Ошибка', ephemeral = True)
+			
+			await channel.send(f"{client.ticket_mod.mention},{interaction.user.mention} тикет создан!", view = closes())
+			await interaction.response.send_message(f'Я открыл тикет для вас {channel.mention}', ephemeral = True)
 
 
 class confirm(discord.ui.View):
@@ -49,6 +56,7 @@ class aclient(discord.Client):
         super().__init__(intents = intents)
         self.synced = False
         self.added = False
+	self.ticket_mod = id модератора
 
     async def on_ready(self):
         await self.wait_until_ready()
@@ -79,5 +87,25 @@ async def closee(interaction: discord.Interaction):
 	else:
 		await interaction.response.send_message('Ошибка', ephemeral = True)
 
+@tree.command(guild = discord.Object(id = server_id), name = 'add', description = 'Данная команда добавляет пользователя')
+@app_commands.describe(user = 'пользователь+')
+async def add(interaction: discord.Interaction, user: discord.Member):
+    if "тикет-для-" in interaction.channel.name:
+        await interaction.channel.set_permissions(user, view_channel = True, read_message_history = True, send_messages = True, attach_files = True, embed_links = True)
+        await interaction.response.send_message(f"{user.mention} добавлен в **тикет** к{interaction.user.mention}")
+    else: await interaction.response.send_message("Ошибка", ephemeral = True)
+
+
+@tree.command(guild = discord.Object(id = server_id), name = 'remove', description = 'Данная команда удаляет пользователя')
+@app_commands.describe(user = 'Пользователь -')
+async def remove(interaction: discord.Interaction, user: discord.Member):
+    if 'тикет-для-' in interaction.channel.name:
+        if type(client.ticket_mod) is not discord.Role:client.ticket_mod = interaction.guild.get_role(ID модератора)
+        
+        if client.ticket_mod is not user.roles:
+            await interaction.channel.set_permissions(user, overwrite = None)
+            await interaction.response.send_message(f"{user.mention} был удалён из тикета", ephemeral = True)
+        else:await interaction.response.send_message(f"{user.mention} Это модератор!", ephemeral=True)
+    else:await interaction.response.send_message('Ошибка', ephemeral= True)
 
 client.run('токен')
