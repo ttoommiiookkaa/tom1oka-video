@@ -12,12 +12,11 @@ class aclient(discord.Client):
 		super().__init__(intents = intents)
 		self.synced = False 
 		self.added = False
-		self.ticket_mod = 1149580174694817874
 
 	async def on_ready(self):
 		await self.wait_until_ready()
 		if not self.synced:
-			await tree.sync(guild = discord.Object(id = 1123148622394040411))
+			await tree.sync(guild = discord.Object(id = id_server))
 			self.synced = True 
 		if not self.added:
 			self.added = True
@@ -46,7 +45,7 @@ class modals(discord.ui.Modal, title = 'Регистрация'):
         )
     
     async def on_submit(self, interaction: discord.Interaction):
-        channel = interaction.guild.get_channel(1188049729565761637)
+        channel = interaction.guild.get_channel(канал для админов)
         
         emb = discord.Embed(title = "Новая заявка!", description = f" Первый пункт: {self.onepunkt.value} \n Второй пункт:{self.twopunkt.value} \n Третий пункт:{self.treepunkt.value}")
         emb.set_author(name = self.user)
@@ -57,7 +56,6 @@ class modals(discord.ui.Modal, title = 'Регистрация'):
 
 client = aclient()
 tree = app_commands.CommandTree(client)
-pars_list = []
 
 
 class Registr(discord.ui.View):
@@ -103,11 +101,14 @@ class Select_otv(discord.ui.View):
         await interaction.response.send_message("✅", ephemeral = True)
         
                                                        
-@tree.command(guild = discord.Object(id = 1123148622394040411), name = 'рег', description = 'регистрация')
+@tree.command(guild = discord.Object(id = id_server), name = 'рег', description = 'регистрация')
 async def regg(interaction: discord.Interaction):
     await interaction.response.send_message("ДОбро пожаловать на сервер!Для продолжения пройдите регистрицию:", view = Registr())
 
-@tree.command(guild = discord.Object(id = 1123148622394040411), name = 'say', description = 'Ответ')
+@tree.command(guild = discord.Object(id = id_server), name = 'say', description = 'Ответ')
 async def regg(interaction: discord.Interaction, member: discord.Member):
     Select_otv.member = member
     await interaction.response.send_message("Решение:", view = Select_otv())
+
+
+client.run("TOKEN")
