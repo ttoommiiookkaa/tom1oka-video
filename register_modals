@@ -1,0 +1,113 @@
+import discord
+
+
+from discord import app_commands, utils, ui
+from discord.ui import Select, View
+from discord.ext import commands
+
+
+class aclient(discord.Client):
+	def __init__(self):
+		intents = discord.Intents.default()
+		super().__init__(intents = intents)
+		self.synced = False 
+		self.added = False
+		self.ticket_mod = 1149580174694817874
+
+	async def on_ready(self):
+		await self.wait_until_ready()
+		if not self.synced:
+			await tree.sync(guild = discord.Object(id = 1123148622394040411))
+			self.synced = True 
+		if not self.added:
+			self.added = True
+
+
+class modals(discord.ui.Modal, title = 'Регистрация'):
+    onepunkt = discord.ui.TextInput(
+        style = discord.TextStyle.short,
+        label = "Какой-то пункт регистрации",
+        required = False,
+        placeholder = "Введите значение"
+        )
+    
+    twopunkt = discord.ui.TextInput(
+        style = discord.TextStyle.short,
+        label = "Какой-то пункт регистрации2",
+        required = False,
+        placeholder = "Введите значение2"
+        )
+    
+    treepunkt = discord.ui.TextInput(
+        style = discord.TextStyle.long,
+        label = "Какой-то пункт регистрации3",
+        required = False,
+        placeholder = "Введите значение3"
+        )
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        channel = interaction.guild.get_channel(1188049729565761637)
+        
+        emb = discord.Embed(title = "Новая заявка!", description = f" Первый пункт: {self.onepunkt.value} \n Второй пункт:{self.twopunkt.value} \n Третий пункт:{self.treepunkt.value}")
+        emb.set_author(name = self.user)
+        
+        await channel.send(embed = emb)
+        await interaction.response.send_message("Ваша заявка отправлена", ephemeral = True)
+        
+
+client = aclient()
+tree = app_commands.CommandTree(client)
+pars_list = []
+
+
+class Registr(discord.ui.View):
+    def __init__(self) -> None:
+        super().__init__(timeout = None)
+        
+    @discord.ui.button(label = "Зарегистрироваться", style = discord.ButtonStyle.gray)
+    async def button_reg(self, interaction: discord.Interaction, button):
+        threat = await interaction.channel.create_thread(name = f"{interaction.user.name.lower()}-ветка", type = discord.ChannelType.private_thread)
+        await threat.send(f"{interaction.user.mention} для регистрации вам следует заполнить анкету:", view = treatinf())
+        await interaction.response.send_message(f"Для продолжения перейдите в ветку:{threat.mention}", ephemeral= True)   
+        
+        
+class treatinf(discord.ui.View):        
+    def __init__(self) -> None:
+        super().__init__(timeout = None)
+        
+    @discord.ui.button(label = "Заполнить анкету", style = discord.ButtonStyle.blurple)
+    async def button_modals(self, interaction: discord.Interaction, button):
+        modals.user = interaction.user
+        await interaction.response.send_modal(modals())        
+        
+        
+class Select_otv(discord.ui.View):
+    @discord.ui.select(
+        placeholder = "Решение о регистрации:",
+        options = [
+			discord.SelectOption(label = 'Заявка одобрена', value = '1', description="Принятие заявки"),
+			discord.SelectOption(label = 'Отказано в регистрации', value = '2', description="Отказ")
+		]
+        )
+    
+    async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
+        select.disabled = True
+        if select.values[0] == '1':
+            tread = discord.utils.get(interaction.guild.threads, name = f"{self.member.name.lower()}-ветка")
+            await tread.send("Ваша заявка одобрена")
+            #Сюда можно поставить команду по выдачи роли.
+        elif select.values[0] == '2':
+            tread = discord.utils.get(interaction.guild.threads, name = f"{self.member.name.lower()}-ветка")
+            await tread.send("Отказано в регистрации")        
+            
+        await interaction.response.send_message("✅", ephemeral = True)
+        
+                                                       
+@tree.command(guild = discord.Object(id = 1123148622394040411), name = 'рег', description = 'регистрация')
+async def regg(interaction: discord.Interaction):
+    await interaction.response.send_message("ДОбро пожаловать на сервер!Для продолжения пройдите регистрицию:", view = Registr())
+
+@tree.command(guild = discord.Object(id = 1123148622394040411), name = 'say', description = 'Ответ')
+async def regg(interaction: discord.Interaction, member: discord.Member):
+    Select_otv.member = member
+    await interaction.response.send_message("Решение:", view = Select_otv())
