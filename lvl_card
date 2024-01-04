@@ -1,0 +1,35 @@
+@tree.command(guild = discord.Object(id = 1123148622394040411), name = 'ранг', description = 'Показывает карточку ранга')
+async def rang(interaction: discord.Interaction, member: discord.Member = None):
+    if not member:
+        member = interaction.user 
+        
+    xp = 10    
+        
+    user_info = {
+        "name": f"{member.name}",
+        "xp": xp,
+        "level": 5,
+        "next_lvl_xp": 100,
+        "percentage": xp
+    }
+
+    background = Editor("banner.png")
+    profile_picture = await load_image_async(str(member.avatar))
+    profile = Editor(profile_picture).resize((150, 150)).circle_image()
+    
+    font_osn = Font.poppins(size = 40)
+    font_small = Font.montserrat(size = 30)
+    
+    background.paste(profile, (30, 30))
+
+
+    background.rectangle((30, 220), width = 650, height= 40, color="#FFFFFF") #Цвет основной полоски
+    background.bar((30, 220), max_width = 650, height= 40, percentage=user_info["percentage"], color = "#6A5ACD")#Цвет заполняемой полоски
+    background.text((200, 40), user_info["name"], font = font_osn, color = "#FFFFFF")
+    
+    background.rectangle((200, 100), width=350, height=2, fill = "#FFFFFF")
+    background.text((200, 130), f"Уровень: {user_info['level']} | Опыт: {user_info['xp']} / {user_info['next_lvl_xp']}", font = font_small, color = "#FFFFFF")
+    
+    file = discord.File(fp = background.image_bytes, filename="lvlcard.png")
+    await interaction.channel.send(file = file)
+    await interaction.response.send_message('.', ephemeral = True)
