@@ -1,3 +1,27 @@
+from typing import Optional
+import discord
+import sqlite3
+
+
+from discord import app_commands, utils, ui
+from discord.ui import Select, View
+from discord.ext import commands
+from easy_pil import *
+
+
+
+class aclient(discord.Client):
+	def __init__(self):
+		intents = discord.Intents.default()
+		super().__init__(intents = intents)
+
+	async def on_ready(self):
+		await self.wait_until_ready()
+
+client = aclient()
+tree = app_commands.CommandTree(client)
+
+
 @tree.command(guild = discord.Object(id = 1123148622394040411), name = 'ранг', description = 'Показывает карточку ранга')
 async def rang(interaction: discord.Interaction, member: discord.Member = None):
     if not member:
@@ -33,3 +57,6 @@ async def rang(interaction: discord.Interaction, member: discord.Member = None):
     file = discord.File(fp = background.image_bytes, filename="lvlcard.png")
     await interaction.channel.send(file = file)
     await interaction.response.send_message('.', ephemeral = True)
+
+
+client.run('ТОКЕН')
