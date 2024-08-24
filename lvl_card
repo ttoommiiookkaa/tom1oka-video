@@ -1,6 +1,7 @@
 from typing import Optional
 import discord
 import sqlite3
+import time
 
 
 from discord import app_commands, utils, ui
@@ -11,30 +12,36 @@ from easy_pil import *
 
 
 class aclient(discord.Client):
-	def __init__(self):
-		intents = discord.Intents.default()
-		super().__init__(intents = intents)
-
-	async def on_ready(self):
-		await self.wait_until_ready()
+    def __init__(self):
+        intents = discord.Intents.all()
+        super().__init__(intents = intents)
+        self.synced = False 
+    
+    async def on_ready(self):
+        await self.wait_until_ready()
+        if not self.synced:
+            await tree.sync(guild = discord.Object(id = ))#ID сервера
+            self.synced = True
+    global tkidt
+    tkidt = {}
 
 client = aclient()
 tree = app_commands.CommandTree(client)
+connection = sqlite3.connect('info.db')
+cursor = connection.cursor()
 
 
-@tree.command(guild = discord.Object(id = 1123148622394040411), name = 'ранг', description = 'Показывает карточку ранга')
+@tree.command(guild = discord.Object(id = ), name = 'ранг', description = 'Показывает карточку ранга')
 async def rang(interaction: discord.Interaction, member: discord.Member = None):
     if not member:
         member = interaction.user 
         
-    xp = 10    
-        
     user_info = {
         "name": f"{member.name}",
-        "xp": xp,
-        "level": 5,
+        "xp": cursor.execute(f"SELECT xp FROM users WHERE id = {member.id}").fetchone()[0],
+        "level": cursor.execute(f"SELECT lvl FROM users WHERE id = {member.id}").fetchone()[0],
         "next_lvl_xp": 100,
-        "percentage": xp
+        "percentage": cursor.execute(f"SELECT per FROM users WHERE id = {member.id}").fetchone()[0]
     }
 
     background = Editor("banner.png")
@@ -57,6 +64,65 @@ async def rang(interaction: discord.Interaction, member: discord.Member = None):
     file = discord.File(fp = background.image_bytes, filename="lvlcard.png")
     await interaction.channel.send(file = file)
     await interaction.response.send_message('.', ephemeral = True)
+    
+#Cоздание базы данных
+@client.event
+async def on_ready(): 
+    cursor.execute("""CREATE TABLE IF NOT EXISTS users(
+        name TEXT,
+        id INT,
+        xp GINT,
+        lvl INT,
+        per INT,
+        second INT)""")
+    
+    for guild in client.guilds:
+        for member in guild.members:
+            if cursor.execute(f"SELECT id FROM users WHERE id = {member.id}").fetchone() is None:
+                cursor.execute(f"INSERT INTO users VALUES('{member}', {member.id}, 0, 0, 0, 0)")
+            else:
+                pass
+    connection.commit()
+    
+    
+@client.event
+async def on_message(message):
+    if message.author.id != client.user.id:
+        role10 = message.author.guild.get_role()#Роль за 10 уровень!
+        cursor.execute("UPDATE users SET xp = xp + 1 WHERE id = {}".format(message.author.id))
+        connection.commit()
+        if cursor.execute(f"SELECT lvl FROM users WHERE id = {message.author.id}").fetchone()[0] <= 10:
+            if cursor.execute(f"SELECT xp FROM users WHERE id = {message.author.id}").fetchone()[0] >= 100 and cursor.execute(f"SELECT xp FROM users WHERE id = {message.author.id}").fetchone()[0] < 102:#Сколько опыта нужно для нового уровня!
+                cursor.execute("UPDATE users SET lvl = lvl + 1 WHERE id = {}".format(message.author.id))
+                cursor.execute("UPDATE users SET xp = 0 WHERE id = {}".format(message.author.id))
+                cursor.execute("UPDATE users SET per = 0 WHERE id = {}".format(message.author.id))
+            if cursor.execute(f"SELECT lvl FROM users WHERE id = {message.author.id}").fetchone()[0] == 10:
+                await message.author.add_roles(role10)
+            
+            
+
+#Узнаём сколько пользователь провёл в голосовом канале
+@client.event 
+async def on_voice_state_update(member, before, after):
+    author = member.id
+    role10 = member.guild.get_role()#Роль за 10 уровень!
+    if before.channel is None and after.channel is not None:
+        t1 = time.time()
+        tkidt[author] = t1
+    elif before.channel is not None and after.channel is None and author in tkidt:
+        t2 = time.time()
+        print(t2-tkidt[author])
+        
+        cursor.execute("UPDATE users SET second = {} + second WHERE id = {}".format(((t2-tkidt[author]) // 1), author))
+        cursor.execute("UPDATE users SET xp = {} + xp WHERE id = {}".format((cursor.execute(f"SELECT second FROM users WHERE id = {author}").fetchone()[0]) * 0.25, author))#0.25 это значение сколько опыта будет даваться за секунду времени
+        if cursor.execute(f"SELECT lvl FROM users WHERE id = {author}").fetchone()[0] <= 10:
+            if cursor.execute(f"SELECT xp FROM users WHERE id = {author}").fetchone()[0] >= 100 and cursor.execute(f"SELECT xp FROM users WHERE id = {author}").fetchone()[0] < 102:#Сколько опыта нужно для нового уровня!
+                cursor.execute("UPDATE users SET lvl = lvl + 1 WHERE id = {}".format(author))
+                cursor.execute("UPDATE users SET xp = 0 WHERE id = {}".format(author))
+                cursor.execute("UPDATE users SET per = 0 WHERE id = {}".format(author))
+            if cursor.execute(f"SELECT lvl FROM users WHERE id = {author}").fetchone()[0] == 10:
+                await member.add_roles(role10)
+        connection.commit()
 
 
 client.run('ТОКЕН')
